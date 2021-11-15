@@ -33,19 +33,34 @@
                             $SD.api.setSettings(jsonObj.context, jsonObj.payload);
                         }
                     },
-                    onKeyUp: (jsonObj) => {
+                    onKeyUp: async jsonObj => {
                         console.log(`[onKeyUp] ${JSON.stringify(jsonObj)}`);
                         if (!jsonObj.payload.settings || !jsonObj.payload.settings.webhookurl) {
                             $SD.api.showAlert(jsonObj.context);
                             return;
                         }
-                        fetch(jsonObj.payload.settings.webhookurl, {
-                            "method": jsonObj.payload.settings.webhookmethod,
-                            "headers": {
-                                "content-type": "application/json"
-                            },
-                            "body": jsonObj.payload.settings.webhookpayload
-                        }).then(result => $SD.api.showOk(jsonObj.context), error => $SD.api.showAlert(jsonObj.context));
+
+                        try {
+                            const webhookMethod = jsonObj.payload.settings.webhookmethod;
+                            let response = await fetch(jsonObj.payload.settings.webhookurl, {
+                                method: jsonObj.payload.settings.webhookmethod,
+                                headers: {
+                                    "content-type": "application/json"
+                                },
+                                ...(webhookMethod !== "GET" && {
+                                    body: jsonObj.payload.settings.webhookpayload,
+                                })
+                            })
+
+                            if (webhookMethod === "GET") {
+                                response = await response.json();
+                                console.log(`[resultGet] `, response);
+                            }
+
+                            $SD.api.showOk(jsonObj.context)
+                        } catch (error) {
+                            $SD.api.showAlert(jsonObj.context)
+                        }
                     }
                 };
         </script>
